@@ -8,10 +8,18 @@
  */
 
 // php 5.3 date timezone requirement, shouldn't affect anything
-date_default_timezone_set( 'Europe/London' );
+// AJM - 2018-12-24 - I think it's better to check and see if it's already set
+if ( ini_get('date.timezone') == "" ) date_default_timezone_set( 'Europe/London' );
 
 // include the srdb class
 require_once( realpath( dirname( __FILE__ ) ) . '/srdb.class.php' );
+
+// explicit autoload function to get around issues with PHP-7.2 CLI
+spl_autoload_register('myAutoLoader');
+
+function myAutoLoader(){
+    include(realpath( dirname( __FILE__ ) ) . '/srdb.class.php');
+}
 
 $opts = array(
 	'h:' => 'host:',
@@ -160,7 +168,7 @@ foreach( $options as $key => $value ) {
 	// boolean options as is, eg. a no value arg should be set true
 	if ( in_array( $key, $long_opts ) )
 		$value = true;
-	
+
 	switch ( $key ) {
 		// boolean options.
 		case 'verbose':
