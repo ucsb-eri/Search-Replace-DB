@@ -847,7 +847,7 @@ class icit_srdb {
 		}
 
 		if ( is_array( $tables ) && ! empty( $tables ) ) {
-                        print "tables=\"--tables=" . implode(',',$tables) . "\"";
+                        print "tables=\"--tables=" . implode(',',$tables) . "\"\n";
 			foreach( $tables as $table ) {
 
 				$encoding = $this->get_table_character_set( $table );
