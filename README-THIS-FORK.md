@@ -14,5 +14,5 @@ There are still a lot of incomplete class errors produced, but the ini_set above
 ## Todo
 * Want to clean up the code a bit, get rid of my extra print statements
 * Should make sure some of the cli code is also updated in index.php
-* Want to add a cli argument to exclude specific tables
+* Replace my hardcoded table exclusion with a cli argument to exclude specific tables
   * In particular, the cache_views table in drupal.
