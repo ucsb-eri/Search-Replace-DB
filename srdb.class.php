@@ -731,12 +731,24 @@ class icit_srdb {
 
 		// some unserialised data cannot be re-serialised eg. SimpleXMLElements
 		try {
+                        //print "    $this->rur_table BO try resursive_unserialize\n";
 
-			if ( is_string( $data ) && ( $unserialized = @unserialize( $data ) ) !== false ) {
-				$data = $this->recursive_unserialize_replace( $from, $to, $unserialized, true );
+			if ( is_string( $data )){
+                                //print "    $this->rur_table try resursive_unserialize - string - attempt unserialize\n";
+                                // NOTE: error suppression on this unserialize call, made a bug in include hard to debug
+                                // Thus all the extra, commented print statements here as I narrowed the issue down.
+                                if (( $unserialized = unserialize( $data ) ) !== false ) {
+                                    //print "    try resursive_unserialize - unserialize string\n";
+				    $data = $this->recursive_unserialize_replace( $from, $to, $unserialized, true );
+                                }
+                                else {
+                                        //print "    $this->rur_table try resursive_unserialize - string - unserialize === false\n";
+	      	         		$data = $this->str_replace( $from, $to, $data );
+                                }
 			}
 
 			elseif ( is_array( $data ) ) {
+                                //print "    $this->rur_table try resursive_unserialize - array\n";
 				$_tmp = array( );
 				foreach ( $data as $key => $value ) {
 					$_tmp[ $key ] = $this->recursive_unserialize_replace( $from, $to, $value, false );
@@ -749,6 +761,7 @@ class icit_srdb {
 			// Submitted by Tina Matter
 			elseif ( is_object( $data ) ) {
 				// $data_class = get_class( $data );
+                                //print "    $this->rur_table try resursive_unserialize - object\n";
 				$_tmp = $data; // new $data_class( );
 				$props = get_object_vars( $data );
 				foreach ( $props as $key => $value ) {
@@ -760,21 +773,24 @@ class icit_srdb {
 			}
 
 			else {
+                                ////print "    try resursive_unserialize - else\n";
 				if ( is_string( $data ) ) {
 					$data = $this->str_replace( $from, $to, $data );
 
 				}
 			}
 
+                        ////print "    EO try resursive_unserialize\n";
+
 			if ( $serialised )
 				return serialize( $data );
 
 		} catch( Exception $error ) {
-
+                        //print "    Got an exception in resursive_unserialize\n";
 			$this->add_error( $error->getMessage(), 'results' );
-
 		}
 
+                //print "    EO resursive_unserialize\n";
 		return $data;
 	}
 
@@ -849,6 +865,7 @@ class icit_srdb {
 		if ( is_array( $tables ) && ! empty( $tables ) ) {
                         print "tables=\"--tables=" . implode(',',$tables) . "\"\n";
 			foreach( $tables as $table ) {
+                                if ( $table == 'cache_views' ){ print "excluding table: cache_views (HARDCODED)\n"; continue; }
 
 				$encoding = $this->get_table_character_set( $table );
 				switch( $encoding ) {
@@ -891,7 +908,9 @@ class icit_srdb {
 				$page_size = $this->get( 'page_size' );
 				$pages = ceil( $row_count / $page_size );
 
+                                //print "table: $table prePageLoop\n";
 				for( $page = 0; $page < $pages; $page++ ) {
+                                        //print "table: $table BO PageLoop: page $page\n";
 
 					$start = $page * $page_size;
 
@@ -901,8 +920,10 @@ class icit_srdb {
 					if ( ! $data )
 						$this->add_error( $this->db_error( ), 'results' );
 
+                                        //print "table: $table FetchData for page\n";
 					while ( $row = $this->db_fetch( $data ) ) {
-
+                                                //print "table: $table BO fetched data loop\n";
+                                                
 						$report[ 'rows' ]++; // Increment the row counter
 						$new_table_report[ 'rows' ]++;
 
@@ -911,7 +932,6 @@ class icit_srdb {
 						$update = false;
 
 						foreach( $columns as $column ) {
-
 							$edited_data = $data_to_fix = $row[ $column ];
 
 							if ( in_array( $column, $primary_key ) ) {
@@ -927,15 +947,16 @@ class icit_srdb {
 							if ( ! empty( $this->include_cols ) && ! in_array( $column, $this->include_cols ) )
 								continue;
 
+                                                        //print "  table: $table MO data loop - pre recursive_unserialize_replace\n";
 							// Run a search replace on the data that'll respect the serialisation.
-							$edited_data = $this->recursive_unserialize_replace( $search, $replace, $data_to_fix );
+                                                        $this->rur_table = $table;
+							$edited_data = $this->recursive_unserialize_replace( $search, $replace, $data_to_fix);
+                                                        //print "  table: $table MO data loop - post recursive_unserialize_replace\n";
 
 							// Something was changed
 							if ( $edited_data != $data_to_fix ) {
-
 								$report[ 'change' ]++;
 								$new_table_report[ 'change' ]++;
-
 								// log first x changes
 								if ( $new_table_report[ 'change' ] <= $this->get( 'report_change_num' ) ) {
 									$new_table_report[ 'changes' ][] = array(
@@ -945,39 +966,32 @@ class icit_srdb {
 										'to' => ( $edited_data )
 									);
 								}
-
 								$update_sql[] = "`{$column}` = " . $this->db_escape( $edited_data );
 								$update = true;
-
 							}
-
 						}
+                                                //
+                                                //print "table: $table MO fetched data loop\n";
+
 
 						if ( $dry_run ) {
 							// nothing for this state
 						} elseif ( $update && ! empty( $where_sql ) ) {
-
 							$sql = 'UPDATE ' . $table . ' SET ' . implode( ', ', $update_sql ) . ' WHERE ' . implode( ' AND ', array_filter( $where_sql ) );
-
 							$result = $this->db_update( $sql );
-
 							if ( ! is_int( $result ) && ! $result ) {
-
 								$this->add_error( $this->db_error( ), 'results' );
-
 							} else {
-
 								$report[ 'updates' ]++;
 								$new_table_report[ 'updates' ]++;
 							}
-
 						}
-
+                                                //print "table: $table EO fetched data loop\n";
 					}
-
 					$this->db_free_result( $data );
-
+                                        //print "table: $table EO PageLoop\n";
 				}
+                                //print "table: $table postPageLoop\n";
 
 				$new_table_report[ 'end' ] = microtime(true);
 
@@ -986,6 +1000,8 @@ class icit_srdb {
 
 				// log result
 				$this->log( 'search_replace_table_end', $table, $new_table_report );
+                                
+                                //print "table: $table END\n";
 			}
 
 		}

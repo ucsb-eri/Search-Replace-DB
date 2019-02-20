@@ -11,6 +11,12 @@
 // AJM - 2018-12-24 - I think it's better to check and see if it's already set
 if ( ini_get('date.timezone') == "" ) date_default_timezone_set( 'Europe/London' );
 
+// suppress E_NOTICE errors.  Lots of these when unserializing objects.  Someone 
+// smarter than me can most likely figure out how to do the autoloading better to avoid those 
+// errors, but maybe not.  Because we are not suppressing ALL errors on certain functions, overall failures can be seen
+ini_set('error_reporting',E_ALL & ~E_NOTICE );
+//ini_set('memory_limit','2048M');
+
 // include the srdb class
 require_once( realpath( dirname( __FILE__ ) ) . '/srdb.class.php' );
 
@@ -18,7 +24,7 @@ require_once( realpath( dirname( __FILE__ ) ) . '/srdb.class.php' );
 spl_autoload_register('myAutoLoader');
 
 function myAutoLoader(){
-    include(realpath( dirname( __FILE__ ) ) . '/srdb.class.php');
+    include_once(realpath( dirname( __FILE__ ) ) . '/srdb.class.php');
 }
 
 $opts = array(
