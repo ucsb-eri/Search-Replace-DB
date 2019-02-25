@@ -1,6 +1,8 @@
 # My motivation for this fork
 I forked this repo in an attempt to get the script working with PHP-7 (Fedora-28)
 
+Another fork of this repo to pay attention to is: https://github.com/chrisbarnett1/Search-Replace-DB/tree/php72-support
+
 ## Discovered that the script was silently bailing on 'cache_views' table in drupal
 The initial issue was an include() call that should be include_once() in the autoloader.
 This caused a fatal error when it tried to load in the file again during a recursive unserialization (pretty sure that is the reason anyway).  I added lots of print statements trying to figure out where the issues was.  Those are now commented out.  So the unserialize() function was prefixed with an '@' to squelch unserialize errors, but end up squelching Fatal errors as well.
