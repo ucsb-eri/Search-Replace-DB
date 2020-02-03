@@ -1,5 +1,7 @@
 # My motivation for this fork
-I forked this repo in an attempt to get the script working with PHP-7 (Fedora-28)
+I forked this repo in an attempt to get the script working with PHP-7 (Fedora-28).
+
+Original fork is at: https://github.com/interconnectit/Search-Replace-DB
 
 Another fork of this repo to pay attention to is: https://github.com/chrisbarnett1/Search-Replace-DB/tree/php72-support
 
